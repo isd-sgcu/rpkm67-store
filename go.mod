@@ -32,7 +32,7 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/isd-sgcu/rpkm67-go-proto v0.1.3
+	github.com/isd-sgcu/rpkm67-go-proto v0.1.4
 	github.com/minio/minio-go/v7 v7.0.72
 	go.uber.org/multierr v1.10.0 // indirect
 	google.golang.org/grpc v1.64.0
