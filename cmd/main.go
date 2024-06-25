@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,8 +14,11 @@ import (
 	objectProto "github.com/isd-sgcu/rpkm67-go-proto/rpkm67/store/object/v1"
 	"github.com/isd-sgcu/rpkm67-store/config"
 	"github.com/isd-sgcu/rpkm67-store/database"
+	"github.com/isd-sgcu/rpkm67-store/internal/client/store"
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
 	"github.com/isd-sgcu/rpkm67-store/logger"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -28,6 +32,17 @@ func main() {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
+	minioClient, err := minio.New(conf.Store.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(conf.Store.AccessKey, conf.Store.SecretKey, conf.Store.Token),
+		Secure: conf.Store.UseSSL,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("Failed to connect to Minio: %v", err))
+	}
+
+	storeClient := store.NewClient(minioClient)
+	httpClient := &http.Client{}
+
 	logger := logger.New(conf)
 
 	db, err := database.InitDatabase(&conf.DB, conf.App.IsDevelopment())
@@ -36,6 +51,7 @@ func main() {
 	}
 
 	objectRepo := object.NewRepository(db)
+	objectSvc := object.NewService(objectRepo, *conf, storeClient, *httpClient, logger)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", conf.App.Port))
 	if err != nil {
@@ -44,7 +60,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
-	objectProto.RegisterObjectServiceServer(grpcServer, object.NewService(objectRepo, logger))
+	objectProto.RegisterObjectServiceServer(grpcServer, objectSvc)
 
 	reflection.Register(grpcServer)
 
