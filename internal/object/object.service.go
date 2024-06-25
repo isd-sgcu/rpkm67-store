@@ -9,6 +9,7 @@ import (
 	"github.com/isd-sgcu/rpkm67-store/config"
 	"github.com/isd-sgcu/rpkm67-store/constant"
 	"github.com/isd-sgcu/rpkm67-store/internal/client/store"
+	"github.com/isd-sgcu/rpkm67-store/internal/model"
 	"github.com/minio/minio-go/v7"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -66,6 +67,15 @@ func (s *serviceImpl) Upload(_ context.Context, req *proto.UploadObjectRequest) 
 		Key: uploadOutput.Key,
 	}
 
+	err = s.repo.Upload(&model.Object{
+		ImageUrl:  objectResp.Url,
+		ObjectKey: objectResp.Key,
+	})
+	if err != nil {
+		s.log.Named("Upload").Error("Upload: ", zap.Error(err))
+		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
+	}
+
 	return &proto.UploadObjectResponse{
 		Object: objectResp,
 	}, nil
@@ -89,6 +99,11 @@ func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjec
 		return &proto.DeleteByKeyObjectResponse{
 			Success: false,
 		}, status.Error(codes.Internal, constant.InternalServerErrorMessage)
+	}
+
+	err = s.repo.DeleteByKey(req.Key)
+	if err != nil {
+		s.log.Named("DeleteByKey").Error("DeleteByKey: ", zap.Error(err))
 	}
 
 	return &proto.DeleteByKeyObjectResponse{
