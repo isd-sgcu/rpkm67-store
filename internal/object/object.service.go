@@ -76,7 +76,24 @@ func (s *serviceImpl) FindByKey(_ context.Context, req *proto.FindByKeyObjectReq
 }
 
 func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjectRequest) (*proto.DeleteByKeyObjectResponse, error) {
-	return nil, nil
+	if req.Key == "" {
+		s.log.Named("DeleteByKey").Error("Key is empty")
+		return &proto.DeleteByKeyObjectResponse{
+			Success: false,
+		}, status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage)
+	}
+
+	err := s.storeClient.DeleteByKey(s.conf.Store.BucketName, req.Key, minio.RemoveObjectOptions{})
+	if err != nil {
+		s.log.Named("DeleteByKey").Error("DeleteByKey: ", zap.Error(err))
+		return &proto.DeleteByKeyObjectResponse{
+			Success: false,
+		}, status.Error(codes.Internal, constant.InternalServerErrorMessage)
+	}
+
+	return &proto.DeleteByKeyObjectResponse{
+		Success: true,
+	}, nil
 }
 
 func (s *serviceImpl) GetURL(bucketName string, objectKey string) string {

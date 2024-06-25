@@ -7,5 +7,6 @@ const FileNotFoundErrorMessage = "File cannot be empty"
 const InvalidFileTypeErrorMessage = "Invalid file type"
 const InvalidFileSizeErrorMessage = "Invalid file size"
 const InvalidFileErrorMessage = "Invalid file"
-const InvalidFileKeyErrorMessage = "Invalid file key"
 const InvalidFileUrlErrorMessage = "Invalid file url"
+
+const KeyEmptyErrorMessage = "Key is empty"
