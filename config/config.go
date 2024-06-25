@@ -18,8 +18,13 @@ type DB struct {
 }
 
 type Store struct {
+	Endpoint   string `mapstructure:"endpoint"`
+	AccessKey  string `mapstructure:"access_key"`
+	SecretKey  string `mapstructure:"secret_key"`
+	UseSSL     bool   `mapstructure:"use_ssl"`
 	BucketName string `mapstructure:"bucket_name"`
 	Region     string `mapstructure:"region"`
+	Token      string `mapstructure:"token"`
 }
 
 type Config struct {
@@ -49,6 +54,11 @@ func LoadConfig() (config *Config, err error) {
 	storeConfig := Store{
 		BucketName: os.Getenv("STORE_BUCKET_NAME"),
 		Region:     os.Getenv("STORE_REGION"),
+		Endpoint:   os.Getenv("STORE_ENDPOINT"),
+		AccessKey:  os.Getenv("STORE_ACCESS_KEY"),
+		SecretKey:  os.Getenv("STORE_SECRET_KEY"),
+		UseSSL:     os.Getenv("STORE_USE_SSL") == "true",
+		Token:      os.Getenv("STORE_TOKEN"),
 	}
 
 	dbConfig := DB{
