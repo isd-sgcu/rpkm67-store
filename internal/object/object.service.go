@@ -82,7 +82,25 @@ func (s *serviceImpl) Upload(_ context.Context, req *proto.UploadObjectRequest) 
 }
 
 func (s *serviceImpl) FindByKey(_ context.Context, req *proto.FindByKeyObjectRequest) (*proto.FindByKeyObjectResponse, error) {
-	return nil, nil
+	if req.Key == "" {
+		s.log.Named("FindByKey").Error("Key is empty")
+		return nil, status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage)
+	}
+
+	object := model.Object{}
+
+	err := s.repo.FindByKey(req.Key, &object)
+	if err != nil {
+		s.log.Named("FindByKey").Error("FindByKey: ", zap.Error(err))
+		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
+	}
+
+	return &proto.FindByKeyObjectResponse{
+		Object: &proto.Object{
+			Url: object.ImageUrl,
+			Key: object.ObjectKey,
+		},
+	}, nil
 }
 
 func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjectRequest) (*proto.DeleteByKeyObjectResponse, error) {

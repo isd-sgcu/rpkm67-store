@@ -10,3 +10,4 @@ const InvalidFileErrorMessage = "Invalid file"
 const InvalidFileUrlErrorMessage = "Invalid file url"
 
 const KeyEmptyErrorMessage = "Key is empty"
+const ObjectNotFoundErrorMessage = "Object not found"
