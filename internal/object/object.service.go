@@ -1,16 +1,13 @@
 package object
 
 import (
-	"bytes"
 	"context"
-	"net/http"
+	"fmt"
 
 	proto "github.com/isd-sgcu/rpkm67-go-proto/rpkm67/store/object/v1"
 	"github.com/isd-sgcu/rpkm67-store/config"
 	"github.com/isd-sgcu/rpkm67-store/constant"
-	"github.com/isd-sgcu/rpkm67-store/internal/client/store"
-	"github.com/isd-sgcu/rpkm67-store/internal/model"
-	"github.com/minio/minio-go/v7"
+	"github.com/isd-sgcu/rpkm67-store/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,62 +19,41 @@ type Service interface {
 
 type serviceImpl struct {
 	proto.UnimplementedObjectServiceServer
-	conf        config.Config
-	repo        Repository
-	log         *zap.Logger
-	storeClient store.Client
-	httpClient  http.Client
+	conf  *config.Store
+	repo  Repository
+	utils utils.Utils
+	log   *zap.Logger
 }
 
-func NewService(repo Repository, conf config.Config, storeClient store.Client, httpClient http.Client, log *zap.Logger) proto.ObjectServiceServer {
+func NewService(repo Repository, conf *config.Store, log *zap.Logger, utils utils.Utils) Service {
 	return &serviceImpl{
-		conf:        conf,
-		repo:        repo,
-		log:         log,
-		storeClient: storeClient,
-		httpClient:  httpClient,
+		repo:  repo,
+		conf:  conf,
+		utils: utils,
+		log:   log,
 	}
 }
 
 func (s *serviceImpl) Upload(_ context.Context, req *proto.UploadObjectRequest) (*proto.UploadObjectResponse, error) {
-	if req.Data == nil {
-		s.log.Named("Upload").Error(constant.FileNotFoundErrorMessage)
-		return nil, status.Error(codes.NotFound, constant.FileNotFoundErrorMessage)
-	}
-
-	randomString, err := GenerateRandomString(10)
+	randomString, err := s.utils.GenerateRandomString(10)
 	if err != nil {
 		s.log.Named("Upload").Error("GenerateRandomString: ", zap.Error(err))
-	}
-
-	objectKey := req.Filename + "_" + randomString
-	buffer := bytes.NewReader(req.Data)
-
-	uploadOutput, err := s.storeClient.Upload(s.conf.Store.BucketName, objectKey, buffer, buffer.Size(), minio.PutObjectOptions{
-		ContentType: "application/octet-stream",
-	})
-
-	if err != nil {
-		s.log.Named("Upload").Error("Upload: ", zap.Error(err))
 		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
 	}
 
-	objectResp := &proto.Object{
-		Url: s.GetURL(s.conf.Store.BucketName, objectKey),
-		Key: uploadOutput.Key,
-	}
+	objectKey := req.Filename + "_" + randomString
 
-	err = s.repo.Upload(&model.Object{
-		ImageUrl:  objectResp.Url,
-		ObjectKey: objectResp.Key,
-	})
+	url, key, err := s.repo.Upload(req.Data, s.conf.BucketName, objectKey)
 	if err != nil {
 		s.log.Named("Upload").Error("Upload: ", zap.Error(err))
 		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
 	}
 
 	return &proto.UploadObjectResponse{
-		Object: objectResp,
+		Object: &proto.Object{
+			Url: url,
+			Key: key,
+		},
 	}, nil
 }
 
@@ -87,18 +63,20 @@ func (s *serviceImpl) FindByKey(_ context.Context, req *proto.FindByKeyObjectReq
 		return nil, status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage)
 	}
 
-	object := model.Object{}
-
-	err := s.repo.FindByKey(req.Key, &object)
+	url, err := s.repo.Get(s.conf.BucketName, req.Key)
 	if err != nil {
-		s.log.Named("FindByKey").Error("FindByKey: ", zap.Error(err))
+		s.log.Named("FindByKey").Error("Get: ", zap.Error(err))
 		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
+	}
+	if url == "" {
+		s.log.Named("FindByKey").Error(fmt.Sprintf("Object with key %v not found", req.Key))
+		return nil, status.Error(codes.NotFound, constant.ObjectNotFoundErrorMessage)
 	}
 
 	return &proto.FindByKeyObjectResponse{
 		Object: &proto.Object{
-			Url: object.ImageUrl,
-			Key: object.ObjectKey,
+			Url: url,
+			Key: req.Key,
 		},
 	}, nil
 }
@@ -111,17 +89,12 @@ func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjec
 		}, status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage)
 	}
 
-	err := s.storeClient.DeleteByKey(s.conf.Store.BucketName, req.Key, minio.RemoveObjectOptions{})
+	err := s.repo.Delete(s.conf.BucketName, req.Key)
 	if err != nil {
-		s.log.Named("DeleteByKey").Error("DeleteByKey: ", zap.Error(err))
+		s.log.Named("DeleteByKey").Error("Delete: ", zap.Error(err))
 		return &proto.DeleteByKeyObjectResponse{
 			Success: false,
 		}, status.Error(codes.Internal, constant.InternalServerErrorMessage)
-	}
-
-	err = s.repo.DeleteByKey(req.Key)
-	if err != nil {
-		s.log.Named("DeleteByKey").Error("DeleteByKey: ", zap.Error(err))
 	}
 
 	return &proto.DeleteByKeyObjectResponse{
@@ -130,5 +103,5 @@ func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjec
 }
 
 func (s *serviceImpl) GetURL(bucketName string, objectKey string) string {
-	return "https://" + s.conf.Store.Endpoint + "/" + bucketName + "/" + objectKey
+	return "https://" + s.conf.Endpoint + "/" + bucketName + "/" + objectKey
 }

@@ -13,9 +13,9 @@ import (
 
 	objectProto "github.com/isd-sgcu/rpkm67-go-proto/rpkm67/store/object/v1"
 	"github.com/isd-sgcu/rpkm67-store/config"
-	"github.com/isd-sgcu/rpkm67-store/database"
 	"github.com/isd-sgcu/rpkm67-store/internal/client/store"
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
+	"github.com/isd-sgcu/rpkm67-store/internal/utils"
 	"github.com/isd-sgcu/rpkm67-store/logger"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -31,9 +31,12 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
+	fmt.Println("conf: ", conf)
+
+	logger := logger.New(conf)
 
 	minioClient, err := minio.New(conf.Store.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(conf.Store.AccessKey, conf.Store.SecretKey, conf.Store.Token),
+		Creds:  credentials.NewStaticV4(conf.Store.AccessKey, conf.Store.SecretKey, ""),
 		Secure: conf.Store.UseSSL,
 	})
 	if err != nil {
@@ -43,15 +46,10 @@ func main() {
 	storeClient := store.NewClient(minioClient)
 	httpClient := &http.Client{}
 
-	logger := logger.New(conf)
+	randomUtils := utils.NewRandomUtils()
 
-	db, err := database.InitDatabase(&conf.DB, conf.App.IsDevelopment())
-	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database: %v", err))
-	}
-
-	objectRepo := object.NewRepository(db)
-	objectSvc := object.NewService(objectRepo, *conf, storeClient, *httpClient, logger)
+	objectRepo := object.NewRepository(&conf.Store, storeClient, httpClient)
+	objectSvc := object.NewService(objectRepo, &conf.Store, logger.Named("objectSvc"), randomUtils)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", conf.App.Port))
 	if err != nil {
@@ -65,10 +63,10 @@ func main() {
 	reflection.Register(grpcServer)
 
 	go func() {
-		logger.Sugar().Infof("RPKM67 Auth starting at port %v", conf.App.Port)
+		logger.Sugar().Infof("RPKM67 Store starting at port %v", conf.App.Port)
 
 		if err := grpcServer.Serve(listener); err != nil {
-			logger.Fatal("Failed to start RPKM67 Auth service", zap.Error(err))
+			logger.Fatal("Failed to start RPKM67 Store service", zap.Error(err))
 		}
 	}()
 
@@ -76,13 +74,6 @@ func main() {
 		"server": func(ctx context.Context) error {
 			grpcServer.GracefulStop()
 			return nil
-		},
-		"database": func(ctx context.Context) error {
-			sqlDB, err := db.DB()
-			if err != nil {
-				return nil
-			}
-			return sqlDB.Close()
 		},
 	})
 
