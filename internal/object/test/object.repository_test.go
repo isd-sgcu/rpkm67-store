@@ -127,6 +127,11 @@ func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 	t.Empty(url)
 }
 
+func (t *ObjectRepositoryTest) TestGetURL() {
+	repo := object.NewRepository(t.conf, nil, nil)
+	url := repo.GetURL("bucket","object")
+	t.Assert().Equal("https://mock-endpoint/bucket/object",url)
+}
 
 
 
