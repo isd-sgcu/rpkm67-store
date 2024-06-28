@@ -6,7 +6,13 @@ server:
 
 watch: 
 	air
+
 mock-gen:
+	mockgen -source ./internal/object/object.repository.go -destination ./mocks/object/object.repository.go
+	mockgen -source ./internal/object/object.service.go -destination ./mocks/object/object.service.go
+	mockgen -source ./internal/client/http/http.client.go -destination ./mocks/client/http/http.client.go
+	mockgen -source ./internal/client/store/store.client.go -destination ./mocks/client/store/store.client.go
+	mockgen -source ./internal/utils/random.utils.go -destination ./mocks/utils/random/random.utils.go
 
 test:
 	go vet ./...
