@@ -2,11 +2,13 @@ package test
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/isd-sgcu/rpkm67-store/config"
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
+	httpClient "github.com/isd-sgcu/rpkm67-store/mocks/client/http"
 	storeClient "github.com/isd-sgcu/rpkm67-store/mocks/client/store"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/suite"
@@ -79,7 +81,7 @@ func (t *ObjectRepositoryTest) TestDeleteSuccess() {
 	t.Nil(err)
 }
 
-func (t *ObjectRepositoryTest) TestDeleteFail() {
+func (t *ObjectRepositoryTest) TestDeleteError() {
 	storeClient := storeClient.NewMockClient(t.controller)
 	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(errors.New("error"))
 
@@ -87,6 +89,42 @@ func (t *ObjectRepositoryTest) TestDeleteFail() {
 
 	err:= repo.Delete("bucket", "object")
 	t.NotNil(err)
+}
+
+func (t *ObjectRepositoryTest) TestGetSuccess() {
+	httpClient := httpClient.NewMockClient(t.controller)
+	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+		StatusCode: http.StatusOK},nil)
+
+	repo := object.NewRepository(t.conf, nil, httpClient)
+
+	url,err:= repo.Get("bucket", "object")
+	t.Nil(err)
+	t.Assert().Equal(repo.GetURL("bucket","object"),url)
+}
+
+func (t *ObjectRepositoryTest) TestGetError() {
+	httpClient := httpClient.NewMockClient(t.controller)
+	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+		StatusCode: http.StatusOK},errors.New("error"))
+
+	repo := object.NewRepository(t.conf, nil, httpClient)
+
+	url,err:= repo.Get("bucket", "object")
+	t.NotNil(err)
+	t.Empty(url)
+}
+
+func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
+	httpClient := httpClient.NewMockClient(t.controller)
+	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+		StatusCode: http.StatusNotFound},nil)
+
+	repo := object.NewRepository(t.conf, nil, httpClient)
+
+	url,err:= repo.Get("bucket", "object")
+	t.Nil(err)
+	t.Empty(url)
 }
 
 
