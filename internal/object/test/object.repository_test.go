@@ -102,7 +102,7 @@ func (t *ObjectRepositoryTest) TestGetSuccess() {
 
 	url,err:= repo.Get("bucket", "object")
 	t.Nil(err)
-	t.Assert().Equal(repo.GetURL("bucket","object"),url)
+	t.Equal(repo.GetURL("bucket","object"),url)
 }
 
 func (t *ObjectRepositoryTest) TestGetError() {
@@ -132,5 +132,5 @@ func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 func (t *ObjectRepositoryTest) TestGetURL() {
 	repo := object.NewRepository(t.conf, nil, nil)
 	url := repo.GetURL("bucket","object")
-	t.Assert().Equal(t.mockEndpoint,url)
+	t.Equal(t.mockEndpoint,url)
 }
