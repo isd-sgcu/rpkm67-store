@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -43,3 +44,54 @@ func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
 	t.Equal("mock-key", key)
 	t.Equal(repo.GetURL("mock-bucket", "mock-key"), url)
 }
+
+func (t *ObjectRepositoryTest) TestUploadSuccess() {
+	storeClient := storeClient.NewMockClient(t.controller)
+	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any(), int64(0), gomock.Any()).Return(minio.UploadInfo{Key: "object"}, nil)
+
+	repo := object.NewRepository(t.conf, storeClient, nil)
+
+	url, key, err := repo.Upload([]byte{}, "bucket", "object")
+	t.Nil(err)
+	t.Equal("object", key)
+	t.Equal(repo.GetURL("bucket", "object"), url)
+}
+
+func (t *ObjectRepositoryTest) TestUploadError() {
+	storeClient := storeClient.NewMockClient(t.controller)
+	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any(), int64(0), gomock.Any()).Return(minio.UploadInfo{}, errors.New("error"))
+
+	repo := object.NewRepository(t.conf, storeClient, nil)
+
+	url, key, err := repo.Upload([]byte{}, "bucket", "object")
+	t.NotNil(err)
+	t.Empty(url)
+	t.Empty(key)
+}
+
+func (t *ObjectRepositoryTest) TestDeleteSuccess() {
+	storeClient := storeClient.NewMockClient(t.controller)
+	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(nil)
+
+	repo := object.NewRepository(t.conf, storeClient, nil)
+
+	err:= repo.Delete("bucket", "object")
+	t.Nil(err)
+}
+
+func (t *ObjectRepositoryTest) TestDeleteFail() {
+	storeClient := storeClient.NewMockClient(t.controller)
+	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(errors.New("error"))
+
+	repo := object.NewRepository(t.conf, storeClient, nil)
+
+	err:= repo.Delete("bucket", "object")
+	t.NotNil(err)
+}
+
+
+
+
+
+
+
