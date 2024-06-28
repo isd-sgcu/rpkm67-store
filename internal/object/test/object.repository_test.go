@@ -132,9 +132,3 @@ func (t *ObjectRepositoryTest) TestGetURL() {
 	url := repo.GetURL("bucket","object")
 	t.Assert().Equal("https://mock-endpoint/bucket/object",url)
 }
-
-
-
-
-
-
