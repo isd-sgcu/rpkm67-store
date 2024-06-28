@@ -18,6 +18,7 @@ type ObjectRepositoryTest struct {
 	suite.Suite
 	conf       *config.Store
 	controller *gomock.Controller
+	mockEndpoint string
 }
 
 func TestObjectRepository(t *testing.T) {
@@ -29,6 +30,7 @@ func (t *ObjectRepositoryTest) SetupTest() {
 		Endpoint: "mock-endpoint",
 	}
 	t.controller = gomock.NewController(t.T())
+	t.mockEndpoint = "https://mock-endpoint/bucket/object"
 }
 
 func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
@@ -93,7 +95,7 @@ func (t *ObjectRepositoryTest) TestDeleteError() {
 
 func (t *ObjectRepositoryTest) TestGetSuccess() {
 	httpClient := httpClient.NewMockClient(t.controller)
-	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
 		StatusCode: http.StatusOK},nil)
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
@@ -105,7 +107,7 @@ func (t *ObjectRepositoryTest) TestGetSuccess() {
 
 func (t *ObjectRepositoryTest) TestGetError() {
 	httpClient := httpClient.NewMockClient(t.controller)
-	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
 		StatusCode: http.StatusOK},errors.New("error"))
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
@@ -117,7 +119,7 @@ func (t *ObjectRepositoryTest) TestGetError() {
 
 func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 	httpClient := httpClient.NewMockClient(t.controller)
-	httpClient.EXPECT().Get("https://mock-endpoint/bucket/object").Return(&http.Response{
+	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
 		StatusCode: http.StatusNotFound},nil)
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
@@ -130,5 +132,5 @@ func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 func (t *ObjectRepositoryTest) TestGetURL() {
 	repo := object.NewRepository(t.conf, nil, nil)
 	url := repo.GetURL("bucket","object")
-	t.Assert().Equal("https://mock-endpoint/bucket/object",url)
+	t.Assert().Equal(t.mockEndpoint,url)
 }
