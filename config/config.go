@@ -51,11 +51,11 @@ func LoadConfig() (config *Config, err error) {
 	}
 
 	storeConfig := Store{
-		BucketName: os.Getenv("BUCKET_NAME"),
-		Endpoint:   os.Getenv("ENDPOINT"),
-		AccessKey:  os.Getenv("ACCESS_KEY"),
-		SecretKey:  os.Getenv("SECRET_KEY"),
-		UseSSL:     os.Getenv("USE_SSL") == "true",
+		BucketName: os.Getenv("STORE_BUCKET_NAME"),
+		Endpoint:   os.Getenv("STORE_ENDPOINT"),
+		AccessKey:  os.Getenv("STORE_ACCESS_KEY"),
+		SecretKey:  os.Getenv("STORE_SECRET_KEY"),
+		UseSSL:     os.Getenv("STORE_USE_SSL") == "true",
 	}
 
 	return &Config{
