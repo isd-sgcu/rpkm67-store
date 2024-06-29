@@ -31,7 +31,6 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
-	fmt.Println("conf: ", conf)
 
 	logger := logger.New(conf)
 
