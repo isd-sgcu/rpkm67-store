@@ -27,7 +27,7 @@ services:
       APP_PORT: 3002
       APP_ENV: development
       DB_URL: postgres://root:1234@db:5432/rpkm67_db
-      REDIS_HOST: localhost
+      REDIS_HOST: cache
       REDIS_PORT: 6379
       REDIS_PASSWORD: 5678
       JWT_SECRET: secret
