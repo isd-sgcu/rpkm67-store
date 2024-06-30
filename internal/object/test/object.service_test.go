@@ -65,9 +65,17 @@ func (t *ObjectServiceTest) TestUploadSuccess() {
 
 	svc := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	_, err := svc.Upload(context.Background(), t.uploadObjectRequest)
+	expected := &proto.UploadObjectResponse{
+		Object: &proto.Object{
+			Key: "key",
+			Url: "url",
+		},
+	}
+
+	actual, err := svc.Upload(context.Background(), t.uploadObjectRequest)
 
 	t.Nil(err)
+	t.Equal(expected, actual)
 }
 
 func (t *ObjectServiceTest) TestFindByKeyEmptyError() {
@@ -132,9 +140,17 @@ func (t *ObjectServiceTest) TestFindByKeySuccess() {
 
 	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	_, err := srv.FindByKey(context.Background(), findByKeyInput)
+	expected := &proto.FindByKeyObjectResponse{
+		Object: &proto.Object{
+			Key: findByKeyInput.Key,
+			Url: "url",
+		},
+	}
+
+	actual, err := srv.FindByKey(context.Background(), findByKeyInput)
 
 	t.Nil(err)
+	t.Equal(expected, actual)
 }
 
 func (t *ObjectServiceTest) TestDeleteByKeyEmptyError() {
@@ -181,7 +197,8 @@ func (t *ObjectServiceTest) TestDeleteByKeySuccess() {
 
 	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	_, err := srv.DeleteByKey(context.Background(), deleteByKeyInput)
+	actual, err := srv.DeleteByKey(context.Background(), deleteByKeyInput)
 
 	t.Nil(err)
+	t.Equal(actual.Success, true)
 }
