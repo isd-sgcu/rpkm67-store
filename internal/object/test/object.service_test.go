@@ -6,8 +6,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	proto "github.com/isd-sgcu/rpkm67-go-proto/rpkm67/store/object/v1"
+	"github.com/isd-sgcu/rpkm67-store/constant"
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
 	"github.com/isd-sgcu/rpkm67-store/internal/utils"
 	mock_object "github.com/isd-sgcu/rpkm67-store/mocks/object"
@@ -44,129 +47,141 @@ func (t *ObjectServiceTest) SetupTest() {
 
 func (t *ObjectServiceTest) TestUploadInternalError() {
 	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
 	repo.EXPECT().Upload(t.uploadObjectRequest.Data, t.conf.BucketName, gomock.Any()).Return("", "", fmt.Errorf("error"))
 
-	_, err := service.Upload(context.Background(), t.uploadObjectRequest)
+	svc := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	t.EqualError(err, "rpc error: code = Internal desc = Internal server error")
+	expectedErr := status.Error(codes.Internal, constant.InternalServerErrorMessage).Error()
+
+	actual, err := svc.Upload(context.Background(), t.uploadObjectRequest)
+
+	t.Nil(actual)
+	t.EqualError(err, expectedErr)
 }
 
-func (t *ObjectServiceTest) TestUpload() {
+func (t *ObjectServiceTest) TestUploadSuccess() {
 	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
 	repo.EXPECT().Upload(t.uploadObjectRequest.Data, t.conf.BucketName, gomock.Any()).Return("url", "key", nil)
 
-	_, err := service.Upload(context.Background(), t.uploadObjectRequest)
+	svc := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	_, err := svc.Upload(context.Background(), t.uploadObjectRequest)
+
+	t.Nil(err)
 }
 
 func (t *ObjectServiceTest) TestFindByKeyEmptyError() {
 	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
 	findByKeyInput := &proto.FindByKeyObjectRequest{
 		Key: "",
 	}
 
-	_, err := service.FindByKey(context.Background(), findByKeyInput)
+	expectedErr := status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage).Error()
 
-	t.EqualError(err, "rpc error: code = InvalidArgument desc = Key is empty")
+	actual, err := srv.FindByKey(context.Background(), findByKeyInput)
+
+	t.Nil(actual)
+	t.EqualError(err, expectedErr)
 }
 
 func (t *ObjectServiceTest) TestFindByKeyInternalError() {
-	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
 	findByKeyInput := &proto.FindByKeyObjectRequest{
 		Key: "key",
 	}
 
+	repo := mock_object.NewMockRepository(t.controller)
 	repo.EXPECT().Get(t.conf.BucketName, findByKeyInput.Key).Return("", fmt.Errorf("error"))
 
-	_, err := service.FindByKey(context.Background(), findByKeyInput)
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	t.EqualError(err, "rpc error: code = Internal desc = Internal server error")
+	expectedErr := status.Error(codes.Internal, constant.InternalServerErrorMessage).Error()
+
+	actual, err := srv.FindByKey(context.Background(), findByKeyInput)
+
+	t.Nil(actual)
+	t.EqualError(err, expectedErr)
 }
 
 func (t *ObjectServiceTest) TestFindByKeyNotFoundError() {
-	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
 	findByKeyInput := &proto.FindByKeyObjectRequest{
 		Key: "key",
 	}
 
+	repo := mock_object.NewMockRepository(t.controller)
 	repo.EXPECT().Get(t.conf.BucketName, findByKeyInput.Key).Return("", nil)
 
-	_, err := service.FindByKey(context.Background(), findByKeyInput)
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	t.EqualError(err, "rpc error: code = NotFound desc = Object not found")
+	expectedErr := status.Error(codes.NotFound, constant.ObjectNotFoundErrorMessage).Error()
+
+	actual, err := srv.FindByKey(context.Background(), findByKeyInput)
+
+	t.Nil(actual)
+	t.EqualError(err, expectedErr)
 }
 
-func (t *ObjectServiceTest) TestFindByKey() {
-	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
+func (t *ObjectServiceTest) TestFindByKeySuccess() {
 	findByKeyInput := &proto.FindByKeyObjectRequest{
 		Key: "key",
 	}
 
+	repo := mock_object.NewMockRepository(t.controller)
 	repo.EXPECT().Get(t.conf.BucketName, findByKeyInput.Key).Return("url", nil)
 
-	_, err := service.FindByKey(context.Background(), findByKeyInput)
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	_, err := srv.FindByKey(context.Background(), findByKeyInput)
+
+	t.Nil(err)
 }
 
 func (t *ObjectServiceTest) TestDeleteByKeyEmptyError() {
 	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
 	deleteByKeyInput := &proto.DeleteByKeyObjectRequest{
 		Key: "",
 	}
 
-	_, err := service.DeleteByKey(context.Background(), deleteByKeyInput)
+	expectedErr := status.Error(codes.InvalidArgument, constant.KeyEmptyErrorMessage).Error()
 
-	t.EqualError(err, "rpc error: code = InvalidArgument desc = Key is empty")
+	actual, err := srv.DeleteByKey(context.Background(), deleteByKeyInput)
+
+	t.Equal(actual.Success, false)
+	t.EqualError(err, expectedErr)
 }
 
 func (t *ObjectServiceTest) TestDeleteByKeyInternalError() {
-	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
 	deleteByKeyInput := &proto.DeleteByKeyObjectRequest{
 		Key: "key",
 	}
 
+	repo := mock_object.NewMockRepository(t.controller)
 	repo.EXPECT().Delete(t.conf.BucketName, deleteByKeyInput.Key).Return(fmt.Errorf("error"))
 
-	_, err := service.DeleteByKey(context.Background(), deleteByKeyInput)
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	t.EqualError(err, "rpc error: code = Internal desc = Internal server error")
+	expectedErr := status.Error(codes.Internal, constant.InternalServerErrorMessage).Error()
+
+	actual, err := srv.DeleteByKey(context.Background(), deleteByKeyInput)
+
+	t.Equal(actual.Success, false)
+	t.EqualError(err, expectedErr)
 }
 
-func (t *ObjectServiceTest) TestDeleteByKey() {
-	repo := mock_object.NewMockRepository(t.controller)
-	service := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
-
+func (t *ObjectServiceTest) TestDeleteByKeySuccess() {
 	deleteByKeyInput := &proto.DeleteByKeyObjectRequest{
 		Key: "key",
 	}
 
+	repo := mock_object.NewMockRepository(t.controller)
 	repo.EXPECT().Delete(t.conf.BucketName, deleteByKeyInput.Key).Return(nil)
 
-	_, err := service.DeleteByKey(context.Background(), deleteByKeyInput)
+	srv := object.NewService(repo, t.conf, t.logger, utils.NewRandomUtils())
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	_, err := srv.DeleteByKey(context.Background(), deleteByKeyInput)
+
+	t.Nil(err)
 }
