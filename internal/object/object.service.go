@@ -47,8 +47,6 @@ func (s *serviceImpl) Upload(_ context.Context, req *proto.UploadObjectRequest) 
 	filename := strings.TrimSuffix(req.Filename, ext)
 	objectKey := filename + "_" + randomString + ext
 
-	fmt.Println("objectKey: ", objectKey)
-
 	url, key, err := s.repo.Upload(req.Data, s.conf.BucketName, objectKey)
 	if err != nil {
 		s.log.Named("Upload").Error("Upload: ", zap.Error(err))
