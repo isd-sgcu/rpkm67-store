@@ -3,6 +3,8 @@ package object
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	proto "github.com/isd-sgcu/rpkm67-go-proto/rpkm67/store/object/v1"
 	"github.com/isd-sgcu/rpkm67-store/config"
@@ -41,7 +43,11 @@ func (s *serviceImpl) Upload(_ context.Context, req *proto.UploadObjectRequest) 
 		return nil, status.Error(codes.Internal, constant.InternalServerErrorMessage)
 	}
 
-	objectKey := req.Filename + "_" + randomString
+	ext := filepath.Ext(req.Filename)
+	filename := strings.TrimSuffix(req.Filename, ext)
+	objectKey := filename + "_" + randomString + ext
+
+	fmt.Println("objectKey: ", objectKey)
 
 	url, key, err := s.repo.Upload(req.Data, s.conf.BucketName, objectKey)
 	if err != nil {
