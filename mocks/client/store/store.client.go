@@ -5,12 +5,12 @@
 package mock_store
 
 import (
+	bytes "bytes"
 	context "context"
-	io "io"
 	reflect "reflect"
 
+	s3 "github.com/aws/aws-sdk-go/service/s3"
 	gomock "github.com/golang/mock/gomock"
-	minio "github.com/minio/minio-go/v7"
 )
 
 // MockClient is a mock of Client interface.
@@ -37,30 +37,30 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // PutObject mocks base method.
-func (m *MockClient) PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (minio.UploadInfo, error) {
+func (m *MockClient) PutObject(ctx context.Context, bucketName, objectName string, reader *bytes.Reader) (*s3.PutObjectOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutObject", ctx, bucketName, objectName, reader, objectSize, opts)
-	ret0, _ := ret[0].(minio.UploadInfo)
+	ret := m.ctrl.Call(m, "PutObject", ctx, bucketName, objectName, reader)
+	ret0, _ := ret[0].(*s3.PutObjectOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PutObject indicates an expected call of PutObject.
-func (mr *MockClientMockRecorder) PutObject(ctx, bucketName, objectName, reader, objectSize, opts interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) PutObject(ctx, bucketName, objectName, reader interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockClient)(nil).PutObject), ctx, bucketName, objectName, reader, objectSize, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockClient)(nil).PutObject), ctx, bucketName, objectName, reader)
 }
 
 // RemoveObject mocks base method.
-func (m *MockClient) RemoveObject(ctx context.Context, bucketName, objectName string, opts minio.RemoveObjectOptions) error {
+func (m *MockClient) RemoveObject(ctx context.Context, bucketName, objectName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveObject", ctx, bucketName, objectName, opts)
+	ret := m.ctrl.Call(m, "RemoveObject", ctx, bucketName, objectName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RemoveObject indicates an expected call of RemoveObject.
-func (mr *MockClientMockRecorder) RemoveObject(ctx, bucketName, objectName, opts interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) RemoveObject(ctx, bucketName, objectName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveObject", reflect.TypeOf((*MockClient)(nil).RemoveObject), ctx, bucketName, objectName, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveObject", reflect.TypeOf((*MockClient)(nil).RemoveObject), ctx, bucketName, objectName)
 }
