@@ -17,8 +17,12 @@ import (
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
 	"github.com/isd-sgcu/rpkm67-store/internal/utils"
 	"github.com/isd-sgcu/rpkm67-store/logger"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -34,15 +38,17 @@ func main() {
 
 	logger := logger.New(conf)
 
-	minioClient, err := minio.New(conf.Store.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(conf.Store.AccessKey, conf.Store.SecretKey, ""),
-		Secure: conf.Store.UseSSL,
-	})
-	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to Minio: %v", err))
+	s3Config := &aws.Config{
+		Credentials:      credentials.NewStaticCredentials(conf.Store.AccessKey, conf.Store.SecretKey, ""),
+		Endpoint:         aws.String(conf.Store.Endpoint),
+		Region:           aws.String(conf.Store.Region),
+		S3ForcePathStyle: aws.Bool(false),
 	}
 
-	storeClient := store.NewClient(minioClient)
+	s3Session := session.Must(session.NewSession(s3Config))
+	s3Client := s3.New(s3Session)
+
+	storeClient := store.NewClient(s3Client)
 	httpClient := &http.Client{}
 
 	randomUtils := utils.NewRandomUtils()

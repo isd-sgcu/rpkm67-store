@@ -33,3 +33,5 @@ coverage.html
 tmp
 staff.json
 docker-compose.qa.yml
+
+.devcontainer/*-data

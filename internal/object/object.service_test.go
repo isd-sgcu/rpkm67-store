@@ -1,4 +1,4 @@
-package test
+package object_test
 
 import (
 	"context"
@@ -36,8 +36,9 @@ func (t *ObjectServiceTest) SetupTest() {
 	t.controller = gomock.NewController(t.T())
 	t.logger = zap.NewNop()
 	t.conf = &config.Store{
-		BucketName: "mock-bucket",
-		Endpoint:   "mock-endpoint",
+		BucketName:  "mock-bucket",
+		Endpoint:    "mock-endpoint",
+		CDNEndpoint: "https://mock-cdn-endpoint",
 	}
 	t.uploadObjectRequest = &proto.UploadObjectRequest{
 		Filename: "object",

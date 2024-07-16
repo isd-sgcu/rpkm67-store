@@ -1,23 +1,23 @@
-package test
+package object_test
 
 import (
 	"errors"
 	"net/http"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/isd-sgcu/rpkm67-store/config"
 	"github.com/isd-sgcu/rpkm67-store/internal/object"
 	httpClient "github.com/isd-sgcu/rpkm67-store/mocks/client/http"
 	storeClient "github.com/isd-sgcu/rpkm67-store/mocks/client/store"
-	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/suite"
 )
 
 type ObjectRepositoryTest struct {
 	suite.Suite
-	conf       *config.Store
-	controller *gomock.Controller
+	conf         *config.Store
+	controller   *gomock.Controller
 	mockEndpoint string
 }
 
@@ -27,19 +27,18 @@ func TestObjectRepository(t *testing.T) {
 
 func (t *ObjectRepositoryTest) SetupTest() {
 	t.conf = &config.Store{
-		Endpoint: "mock-endpoint",
+		Endpoint:    "mock-endpoint",
+		CDNEndpoint: "https://mock-cdn-endpoint",
 	}
 	t.controller = gomock.NewController(t.T())
-	t.mockEndpoint = "https://mock-endpoint/bucket/object"
+	t.mockEndpoint = "https://mock-cdn-endpoint/bucket/object"
 }
 
 func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
 	storeClient := storeClient.NewMockClient(t.controller)
 	storeClient.EXPECT().
-		PutObject(gomock.Any(), "mock-bucket", "mock-key", gomock.Any(), int64(0), gomock.Any()).
-		Return(minio.UploadInfo{
-			Key: "mock-key",
-		}, nil)
+		PutObject(gomock.Any(), "mock-bucket", "mock-key", gomock.Any()).
+		Return(&s3.PutObjectOutput{}, nil)
 
 	repo := object.NewRepository(t.conf, storeClient, nil)
 
@@ -51,7 +50,7 @@ func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
 
 func (t *ObjectRepositoryTest) TestUploadSuccess() {
 	storeClient := storeClient.NewMockClient(t.controller)
-	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any(), int64(0), gomock.Any()).Return(minio.UploadInfo{Key: "object"}, nil)
+	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(&s3.PutObjectOutput{}, nil)
 
 	repo := object.NewRepository(t.conf, storeClient, nil)
 
@@ -63,7 +62,7 @@ func (t *ObjectRepositoryTest) TestUploadSuccess() {
 
 func (t *ObjectRepositoryTest) TestUploadError() {
 	storeClient := storeClient.NewMockClient(t.controller)
-	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any(), int64(0), gomock.Any()).Return(minio.UploadInfo{}, errors.New("error"))
+	storeClient.EXPECT().PutObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(&s3.PutObjectOutput{}, errors.New("error"))
 
 	repo := object.NewRepository(t.conf, storeClient, nil)
 
@@ -75,44 +74,44 @@ func (t *ObjectRepositoryTest) TestUploadError() {
 
 func (t *ObjectRepositoryTest) TestDeleteSuccess() {
 	storeClient := storeClient.NewMockClient(t.controller)
-	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(nil)
+	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object").Return(nil)
 
 	repo := object.NewRepository(t.conf, storeClient, nil)
 
-	err:= repo.Delete("bucket", "object")
+	err := repo.Delete("bucket", "object")
 	t.Nil(err)
 }
 
 func (t *ObjectRepositoryTest) TestDeleteError() {
 	storeClient := storeClient.NewMockClient(t.controller)
-	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object", gomock.Any()).Return(errors.New("error"))
+	storeClient.EXPECT().RemoveObject(gomock.Any(), "bucket", "object").Return(errors.New("error"))
 
 	repo := object.NewRepository(t.conf, storeClient, nil)
 
-	err:= repo.Delete("bucket", "object")
+	err := repo.Delete("bucket", "object")
 	t.NotNil(err)
 }
 
 func (t *ObjectRepositoryTest) TestGetSuccess() {
 	httpClient := httpClient.NewMockClient(t.controller)
 	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
-		StatusCode: http.StatusOK},nil)
+		StatusCode: http.StatusOK}, nil)
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
 
-	url,err:= repo.Get("bucket", "object")
+	url, err := repo.Get("bucket", "object")
 	t.Nil(err)
-	t.Equal(repo.GetURL("bucket","object"),url)
+	t.Equal(repo.GetURL("bucket", "object"), url)
 }
 
 func (t *ObjectRepositoryTest) TestGetError() {
 	httpClient := httpClient.NewMockClient(t.controller)
 	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
-		StatusCode: http.StatusOK},errors.New("error"))
+		StatusCode: http.StatusOK}, errors.New("error"))
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
 
-	url,err:= repo.Get("bucket", "object")
+	url, err := repo.Get("bucket", "object")
 	t.NotNil(err)
 	t.Empty(url)
 }
@@ -120,17 +119,17 @@ func (t *ObjectRepositoryTest) TestGetError() {
 func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 	httpClient := httpClient.NewMockClient(t.controller)
 	httpClient.EXPECT().Get(t.mockEndpoint).Return(&http.Response{
-		StatusCode: http.StatusNotFound},nil)
+		StatusCode: http.StatusNotFound}, nil)
 
 	repo := object.NewRepository(t.conf, nil, httpClient)
 
-	url,err:= repo.Get("bucket", "object")
+	url, err := repo.Get("bucket", "object")
 	t.Nil(err)
 	t.Empty(url)
 }
 
 func (t *ObjectRepositoryTest) TestGetURL() {
 	repo := object.NewRepository(t.conf, nil, nil)
-	url := repo.GetURL("bucket","object")
-	t.Equal(t.mockEndpoint,url)
+	url := repo.GetURL("bucket", "object")
+	t.Equal(t.mockEndpoint, url)
 }
