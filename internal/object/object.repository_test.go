@@ -45,7 +45,7 @@ func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
 	url, key, err := repo.Upload([]byte{}, "mock-bucket", "mock-key")
 	t.Nil(err)
 	t.Equal("mock-key", key)
-	t.Equal(repo.GetURL("mock-bucket", "mock-key"), url)
+	t.Equal(repo.GetURL("mock-key"), url)
 }
 
 func (t *ObjectRepositoryTest) TestUploadSuccess() {
@@ -57,7 +57,7 @@ func (t *ObjectRepositoryTest) TestUploadSuccess() {
 	url, key, err := repo.Upload([]byte{}, "bucket", "object")
 	t.Nil(err)
 	t.Equal("object", key)
-	t.Equal(repo.GetURL("bucket", "object"), url)
+	t.Equal(repo.GetURL("object"), url)
 }
 
 func (t *ObjectRepositoryTest) TestUploadError() {
@@ -101,7 +101,7 @@ func (t *ObjectRepositoryTest) TestGetSuccess() {
 
 	url, err := repo.Get("bucket", "object")
 	t.Nil(err)
-	t.Equal(repo.GetURL("bucket", "object"), url)
+	t.Equal(repo.GetURL("object"), url)
 }
 
 func (t *ObjectRepositoryTest) TestGetError() {
@@ -130,6 +130,6 @@ func (t *ObjectRepositoryTest) TestGetStatusNotOK() {
 
 func (t *ObjectRepositoryTest) TestGetURL() {
 	repo := object.NewRepository(t.conf, nil, nil)
-	url := repo.GetURL("bucket", "object")
+	url := repo.GetURL("object")
 	t.Equal(t.mockEndpoint, url)
 }
