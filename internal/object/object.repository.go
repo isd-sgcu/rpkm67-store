@@ -17,7 +17,7 @@ type Repository interface {
 	Upload(file []byte, bucketName string, objectKey string) (url string, key string, err error)
 	Delete(bucketName string, objectKey string) (err error)
 	Get(bucketName string, objectKey string) (url string, err error)
-	GetURL(bucketName string, objectKey string) string
+	GetURL(objectKey string) string
 }
 
 type repositoryImpl struct {
@@ -46,7 +46,7 @@ func (r *repositoryImpl) Upload(file []byte, bucketName string, objectKey string
 		return "", "", errors.Wrap(err, fmt.Sprintf("Couldn't upload object to %v/%v.", bucketName, objectKey))
 	}
 
-	return r.GetURL(bucketName, objectKey), objectKey, nil
+	return r.GetURL(objectKey), objectKey, nil
 }
 
 func (r *repositoryImpl) Delete(bucketName string, objectKey string) (err error) {
@@ -67,7 +67,7 @@ func (r *repositoryImpl) Get(bucketName string, objectKey string) (url string, e
 	_, cancel := context.WithTimeout(ctx, 50*time.Second)
 	defer cancel()
 
-	url = r.GetURL(bucketName, objectKey)
+	url = r.GetURL(objectKey)
 
 	resp, err := r.httpClient.Get(url)
 	if err != nil {
@@ -80,6 +80,6 @@ func (r *repositoryImpl) Get(bucketName string, objectKey string) (url string, e
 	return url, nil
 }
 
-func (r *repositoryImpl) GetURL(bucketName string, objectKey string) string {
-	return r.conf.CDNEndpoint + "/" + bucketName + "/" + objectKey
+func (r *repositoryImpl) GetURL(objectKey string) string {
+	return r.conf.CDNEndpoint + "/" + objectKey
 }
