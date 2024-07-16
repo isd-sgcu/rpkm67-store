@@ -106,6 +106,6 @@ func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjec
 	}, nil
 }
 
-func (s *serviceImpl) GetURL(bucketName string, objectKey string) string {
-	return "https://" + s.conf.Endpoint + "/" + bucketName + "/" + objectKey
+func (s *serviceImpl) GetURL(objectKey string) string {
+	return s.conf.CDNEndpoint + "/" + objectKey
 }
