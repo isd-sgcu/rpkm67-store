@@ -46,7 +46,7 @@ func (r *repositoryImpl) Upload(file []byte, bucketName string, objectKey string
 		return "", "", errors.Wrap(err, fmt.Sprintf("Couldn't upload object to %v/%v.", bucketName, objectKey))
 	}
 
-	return r.GetURL(bucketName), objectKey, nil
+	return r.GetURL(objectKey), objectKey, nil
 }
 
 func (r *repositoryImpl) Delete(bucketName string, objectKey string) (err error) {
@@ -67,7 +67,7 @@ func (r *repositoryImpl) Get(bucketName string, objectKey string) (url string, e
 	_, cancel := context.WithTimeout(ctx, 50*time.Second)
 	defer cancel()
 
-	url = r.GetURL(bucketName)
+	url = r.GetURL(objectKey)
 
 	resp, err := r.httpClient.Get(url)
 	if err != nil {

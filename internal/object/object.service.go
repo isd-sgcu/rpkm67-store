@@ -105,7 +105,3 @@ func (s *serviceImpl) DeleteByKey(_ context.Context, req *proto.DeleteByKeyObjec
 		Success: true,
 	}, nil
 }
-
-func (s *serviceImpl) GetURL(objectKey string) string {
-	return s.conf.CDNEndpoint + "/" + objectKey
-}
