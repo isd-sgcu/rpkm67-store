@@ -10,7 +10,6 @@ import (
 	"github.com/isd-sgcu/rpkm67-store/config"
 	httpClient "github.com/isd-sgcu/rpkm67-store/internal/client/http"
 	storeClient "github.com/isd-sgcu/rpkm67-store/internal/client/store"
-	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
 )
 
@@ -42,13 +41,12 @@ func (r *repositoryImpl) Upload(file []byte, bucketName string, objectKey string
 
 	buffer := bytes.NewReader(file)
 
-	uploadOutput, err := r.storeClient.PutObject(ctx, bucketName, objectKey, buffer,
-		buffer.Size(), minio.PutObjectOptions{})
+	_, err = r.storeClient.PutObject(ctx, bucketName, objectKey, buffer)
 	if err != nil {
 		return "", "", errors.Wrap(err, fmt.Sprintf("Couldn't upload object to %v/%v.", bucketName, objectKey))
 	}
 
-	return r.GetURL(bucketName, objectKey), uploadOutput.Key, nil
+	return r.GetURL(bucketName, objectKey), objectKey, nil
 }
 
 func (r *repositoryImpl) Delete(bucketName string, objectKey string) (err error) {
@@ -56,10 +54,7 @@ func (r *repositoryImpl) Delete(bucketName string, objectKey string) (err error)
 	_, cancel := context.WithTimeout(ctx, 50*time.Second)
 	defer cancel()
 
-	opts := minio.RemoveObjectOptions{
-		GovernanceBypass: true,
-	}
-	err = r.storeClient.RemoveObject(ctx, bucketName, objectKey, opts)
+	err = r.storeClient.RemoveObject(ctx, bucketName, objectKey)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Couldn't delete object %v/%v.", bucketName, objectKey))
 	}
@@ -86,5 +81,5 @@ func (r *repositoryImpl) Get(bucketName string, objectKey string) (url string, e
 }
 
 func (r *repositoryImpl) GetURL(bucketName string, objectKey string) string {
-	return "https://" + r.conf.Endpoint + "/" + bucketName + "/" + objectKey
+	return r.conf.CDNEndpoint + "/" + bucketName + "/" + objectKey
 }

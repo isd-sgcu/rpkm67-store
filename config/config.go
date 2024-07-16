@@ -16,13 +16,14 @@ type DB struct {
 }
 
 type Store struct {
-	Endpoint   string
-	AccessKey  string
-	SecretKey  string
-	UseSSL     bool
-	BucketName string
-	Region     string
-	Token      string
+	Endpoint    string
+	CDNEndpoint string
+	AccessKey   string
+	SecretKey   string
+	UseSSL      bool
+	BucketName  string
+	Region      string
+	Token       string
 }
 
 type Config struct {
@@ -44,11 +45,13 @@ func LoadConfig() (config *Config, err error) {
 	}
 
 	storeConfig := Store{
-		BucketName: os.Getenv("STORE_BUCKET_NAME"),
-		Endpoint:   os.Getenv("STORE_ENDPOINT"),
-		AccessKey:  os.Getenv("STORE_ACCESS_KEY"),
-		SecretKey:  os.Getenv("STORE_SECRET_KEY"),
-		UseSSL:     os.Getenv("STORE_USE_SSL") == "true",
+		BucketName:  os.Getenv("STORE_BUCKET_NAME"),
+		Endpoint:    os.Getenv("STORE_ENDPOINT"),
+		CDNEndpoint: os.Getenv("STORE_CDN_ENDPOINT"),
+		AccessKey:   os.Getenv("STORE_ACCESS_KEY"),
+		SecretKey:   os.Getenv("STORE_SECRET_KEY"),
+		Region:      os.Getenv("STORE_REGION"),
+		UseSSL:      os.Getenv("STORE_USE_SSL") == "true",
 	}
 
 	return &Config{

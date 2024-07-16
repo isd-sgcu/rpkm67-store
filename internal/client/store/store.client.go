@@ -1,29 +1,39 @@
 package store
 
 import (
+	"bytes"
 	"context"
-	"io"
 
-	"github.com/minio/minio-go/v7"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 type Client interface {
-	PutObject(ctx context.Context, bucketName string, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (info minio.UploadInfo, err error)
-	RemoveObject(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error
+	PutObject(ctx context.Context, bucketName string, objectName string, reader *bytes.Reader) (info *s3.PutObjectOutput, err error)
+	RemoveObject(ctx context.Context, bucketName string, objectName string) error
 }
 
 type clientImpl struct {
-	*minio.Client
+	*s3.S3
 }
 
-func NewClient(minioClient *minio.Client) Client {
-	return &clientImpl{minioClient}
+func NewClient(s3Client *s3.S3) Client {
+	return &clientImpl{s3Client}
 }
 
-func (c *clientImpl) PutObject(ctx context.Context, bucketName string, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (info minio.UploadInfo, err error) {
-	return c.Client.PutObject(ctx, bucketName, objectName, reader, objectSize, opts)
+func (c *clientImpl) PutObject(ctx context.Context, bucketName string, objectName string, reader *bytes.Reader) (info *s3.PutObjectOutput, err error) {
+	return c.S3.PutObject(&s3.PutObjectInput{
+		Bucket: &bucketName,
+		Key:    &objectName,
+		Body:   reader,
+		ACL:    aws.String(s3.ObjectCannedACLPublicRead),
+	})
 }
 
-func (c *clientImpl) RemoveObject(ctx context.Context, bucketName string, objectName string, opts minio.RemoveObjectOptions) error {
-	return c.Client.RemoveObject(ctx, bucketName, objectName, opts)
+func (c *clientImpl) RemoveObject(ctx context.Context, bucketName string, objectName string) error {
+	_, err := c.S3.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: &bucketName,
+		Key:    &objectName,
+	})
+	return err
 }
