@@ -48,10 +48,6 @@ func main() {
 	s3Session := session.Must(session.NewSession(s3Config))
 	s3Client := s3.New(s3Session)
 
-	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to Minio: %v", err))
-	}
-
 	storeClient := store.NewClient(s3Client)
 	httpClient := &http.Client{}
 
