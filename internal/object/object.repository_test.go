@@ -31,7 +31,7 @@ func (t *ObjectRepositoryTest) SetupTest() {
 		CDNEndpoint: "https://mock-cdn-endpoint",
 	}
 	t.controller = gomock.NewController(t.T())
-	t.mockEndpoint = "https://mock-cdn-endpoint/bucket/object"
+	t.mockEndpoint = "https://mock-cdn-endpoint/object"
 }
 
 func (t *ObjectRepositoryTest) TestCreateObjectSuccess() {
